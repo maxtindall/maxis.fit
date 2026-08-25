@@ -178,7 +178,6 @@ let followMode = false;
 let ghosts = [];
 let chaos = 0;
 const followImg = document.createElement("img");
-followImg.src = "circular_image.png";
 followImg.classList.add("follow-target");
 followImg.style.width = "575px";
 followImg.style.height = "575px";
@@ -186,6 +185,7 @@ followImg.style.borderRadius = "50%";
 followImg.style.display = "none";
 document.body.appendChild(followImg);
 function toggleSurprise() {
+  if (!followImg.src) followImg.src = "circular_image.png"; // load on demand
   followMode = !followMode;
   document.body.classList.toggle("surprise");
   document.body.classList.toggle("follow-mode");

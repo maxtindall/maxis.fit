@@ -125,23 +125,28 @@ setInterval(updateTime, 1000);
 const gallery = [
     
   {
-    src: "image_x.jpeg",
+    src: "image_x_web.jpg",
+    full: "image_x.jpeg",
     text: "001. Untitled, Watercolour & acryllic paint marker on paper, 2026."
   },       
   {      
-    src: "image3.jpg",
+    src: "image3_web.jpg",
+    full: "image3.jpg",
     text: "002. Untitled, Watercolour & ink pen on paper, 2023."
   },
   {
-    src: "image4.jpg",
+    src: "image4_web.jpg",
+    full: "image4.jpg",
     text: "003. Untitled, Watercolour on paper, 2023."
   },
   {
-    src: "image5.jpg",
+    src: "image5_web.jpg",
+    full: "image5.jpg",
     text: "004. Untitled, Watercolour on paper, 2023."
   },
   {
-    src: "image6.jpg",
+    src: "image6_web.jpg",
+    full: "image6.jpg",
     text: "005. Untitled, Watercolour on paper, 2023."
   }
 ];
@@ -190,10 +195,12 @@ let zoomed = false;
 img.addEventListener("dblclick", () => {
 
   if (!zoomed) {
+    img.src = gallery[index].full;      /* full resolution on zoom */
     img.style.maxWidth = "none";
     img.style.maxHeight = "none";
     stopRotation();
   } else {
+    img.src = gallery[index].src;       /* back to the light display copy */
     img.style.maxWidth = "100%";
     img.style.maxHeight = "100%";
     img.style.left = "0px";
