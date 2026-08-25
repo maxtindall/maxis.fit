@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Max Tindall</title>
+  <meta charset="UTF-8">
+
+<style>
+
+/* GLOBAL */
+* { font-family: "Courier New", monospace; }
+html, body, a { cursor: crosshair; }
+
+a { color: black; text-decoration: underline; }
+a:hover { color: hotpink; text-decoration: none; }
+
+body {
+  margin: 0;
+  padding-left: 18px;
+  padding-top: 14px;
+}
+
+/* LAYOUT */
+#container { width: 750px; }
+
+h1 {
+  font-size: 50px;
+  margin: 0;
+  padding-bottom: 14px;
+  text-decoration: underline;
+}
+
+/* IMAGE AREA */
+#portrait {
+  float: left;
+  width: 575px;
+  height: 575px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* IMAGE */
+#mainImage {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  cursor: grab;
+  user-select: none;
+}
+
+/* MENU */
+#menu {
+  font-size: 20px;
+  float: right;
+  width: 175px;
+}
+
+#dateOnly { margin-top: 18px; font-size: 16px; }
+#timeOnly { font-size: 14px; opacity: 0.8; }
+
+/* NEW DESCRIPTION */
+#description {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.25;
+  opacity: 0.8;
+}
+
+.clear { clear: both; }
+
+</style>
+</head>
+
+<body>
+
+<div id="container">
+
+  <h1><a href="index.html">MAX TINDALL</a></h1>
+
+  <div id="portrait">
+    <img id="mainImage">
+  </div>
+
+  <div id="menu">
+    <a href="about.html">about</a><br/>
+    <a href="links.html">links</a><br/>
+    <a href="projects.html">projects</a><br/>
+    <a href="selected_work.html">selected work</a><br/>
+
+    <div id="dateOnly"><span id="dateText"></span></div>
+    <div id="timeOnly"><span id="timeText"></span></div>
+
+    <!-- NEW DESCRIPTION -->
+    <div id="description"></div>
+  </div>
+
+  <div class="clear"></div>
+
+</div>
+
+<script>
+
+/* DATE + TIME */
+function updateDate() {
+  document.getElementById("dateText").textContent =
+    new Date().toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+}
+
+function updateTime() {
+  document.getElementById("timeText").textContent =
+    new Date().toLocaleTimeString('en-GB', { hour12: false });
+}
+
+updateDate();
+updateTime();
+setInterval(updateTime, 1000);
+
+/* GALLERY WITH DESCRIPTIONS */
+
+const gallery = [
+    
+  {
+    src: "image_x.jpeg",
+    text: "001. Untitled, Watercolour & acryllic paint marker on paper, 2026."
+  },       
+  {      
+    src: "image3.jpg",
+    text: "002. Untitled, Watercolour & ink pen on paper, 2023."
+  },
+  {
+    src: "image4.jpg",
+    text: "003. Untitled, Watercolour on paper, 2023."
+  },
+  {
+    src: "image5.jpg",
+    text: "004. Untitled, Watercolour on paper, 2023."
+  },
+  {
+    src: "image6.jpg",
+    text: "005. Untitled, Watercolour on paper, 2023."
+  }
+];
+
+let index = 0;
+const img = document.getElementById("mainImage");
+const description = document.getElementById("description");
+
+/* INITIAL LOAD */
+img.src = gallery[0].src;
+description.textContent = gallery[0].text;
+
+/* PRELOAD */
+gallery.forEach(item => {
+  const i = new Image();
+  i.src = item.src;
+});
+
+/* ROTATION */
+
+let interval = null;
+
+function startRotation() {
+  if (!interval) {
+    interval = setInterval(() => {
+      index = (index + 1) % gallery.length;
+
+      img.src = gallery[index].src;
+      description.textContent = gallery[index].text;
+
+    }, 4000);
+  }
+}
+
+function stopRotation() {
+  clearInterval(interval);
+  interval = null;
+}
+
+startRotation();
+
+/* ZOOM */
+
+let zoomed = false;
+
+img.addEventListener("dblclick", () => {
+
+  if (!zoomed) {
+    img.style.maxWidth = "none";
+    img.style.maxHeight = "none";
+    stopRotation();
+  } else {
+    img.style.maxWidth = "100%";
+    img.style.maxHeight = "100%";
+    img.style.left = "0px";
+    img.style.top = "0px";
+    img.style.position = "static";
+    startRotation();
+  }
+
+  zoomed = !zoomed;
+});
+
+/* DRAG */
+
+let dragging = false;
+let offsetX = 0;
+let offsetY = 0;
+
+img.addEventListener("mousedown", (e) => {
+  if (zoomed) {
+    dragging = true;
+    img.style.position = "relative";
+    offsetX = e.clientX - img.offsetLeft;
+    offsetY = e.clientY - img.offsetTop;
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  dragging = false;
+});
+
+document.addEventListener("mousemove", (e) => {
+  if (dragging) {
+    img.style.left = (e.clientX - offsetX) + "px";
+    img.style.top = (e.clientY - offsetY) + "px";
+  }
+});
+
+</script>
+
+</body>
+</html>

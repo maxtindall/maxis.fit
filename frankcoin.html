@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!---THIS SITE WAS CREATED BY MAX TINDALL & ALL WORK IS MY OWN; 
+  I do however use a wide variety of opensource software in my work, 
+  which can be found by digging about some of my code. 
+  If you see this notice, and take issue with something 
+  you see, contact me at: max@maxis,fit --->
+
+  <title>Max Tindall</title>
+  <meta charset="UTF-8">
+
+<style>
+
+/* GLOBAL FONT */
+* {
+  font-family: "Courier New", monospace;
+}
+
+/* CURSOR */
+html, body, a {
+  cursor: crosshair;
+}
+
+/* LINKS */
+a:link, a:visited, a:active {
+  color: black;
+  text-decoration: underline;
+  transition: color 0.2s ease 0.05s;
+}
+
+a:hover {
+  color: hotpink;
+  text-decoration: none;
+}
+
+/* BODY */
+body {
+  margin: 0;
+  padding-left: 18px;
+  padding-top: 14px;
+  color: black;
+
+}
+
+/* CONTAINER */
+#container {
+  width: 750px;
+}
+
+/* TITLE */
+h1 {
+  font-size: 50px;
+  margin: 0;
+  padding-bottom: 14px;
+  text-decoration: underline;
+}
+
+/* LEFT */
+#portrait {
+  float: left;
+  width: 575px;
+  height: 575px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* MENU */
+#menu {
+  font-size: 20px;
+  float: right;
+  width: 175px;
+}
+
+/* DATE + TIME (MATCHED SYSTEM) */
+#dateOnly {
+  margin-top: 18px;
+  font-size: 16px;
+}
+
+#timeOnly {
+  margin-top: 0px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* CLEAR */
+.clear {
+  clear: both;
+}
+
+/* HARD MODE */
+body.surprise {
+  background: black;
+  color: white;
+  filter: invert(1) contrast(1.2);
+  animation: jitter 0.12s infinite;
+}
+
+.follow-mode .follow-target {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.ghost {
+  position: fixed;
+  opacity: 0.15;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 9998;
+  filter: blur(2px);
+  border-radius: 50%;
+}
+
+body.surprise #container {
+  animation: breathe 4s infinite ease-in-out;
+}
+
+@keyframes breathe {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+@keyframes jitter {
+  0% { transform: translate(0,0); }
+  50% { transform: translate(-2px,2px); }
+  100% { transform: translate(0,0); }
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="container">
+
+  <h1>
+    <a href="index.html">MAX TINDALL</a>
+  </h1>
+
+  <div id="portrait">
+    <p>frankcoin is a proof-of-work mined token on the solana blockchain. I just wanted to bother frank & things sort of got out of hand.
+    </p>
+    <a href="https://frankcoin.website">frankcoin</a>
+    <br>
+    <a href="https://github.com/maxtindall/frankcoin">github repo.</a>
+
+  </div>
+
+  <div id="menu">
+    <a href="about.html">about</a><br/>
+    <a href="links.html">links</a><br/>
+    <a href="projects.html">projects</a><br/>
+    <a href="selected_work.html">selected work</a><br/>
+    <!--<a href="#" onclick="toggleSurprise(); return false;">hard mode</a>-->
+
+    <div id="dateOnly">
+      <span id="dateText"></span>
+    </div>
+
+    <div id="timeOnly">
+      <span id="timeText"></span>
+    </div>
+  </div>
+
+  <div class="clear"></div>
+
+</div>
+
+<script>
+
+/* DATE + TIME */
+function getFormattedDate() {
+  const d = new Date();
+  return d.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+}
+
+function updateDate() {
+  document.getElementById("dateText").textContent = getFormattedDate();
+}
+
+function updateTime() {
+  const d = new Date();
+  document.getElementById("timeText").textContent =
+    d.toLocaleTimeString('en-GB', { hour12: false });
+}
+
+updateDate();
+updateTime();
+setInterval(updateTime, 1000);
+
+(function scheduleMidnightUpdate(){
+  const now = new Date();
+  const next = new Date();
+  next.setHours(24, 0, 0, 0);
+
+  setTimeout(() => {
+    updateDate();
+    scheduleMidnightUpdate();
+  }, next - now);
+})();
+
+/* HARD MODE (kept consistent) */
+let followMode = false;
+let ghosts = [];
+let chaos = 0;
+
+const followImg = document.createElement("img");
+followImg.src = "circular_image.png";
+followImg.classList.add("follow-target");
+followImg.style.width = "575px";
+followImg.style.height = "575px";
+followImg.style.borderRadius = "50%";
+followImg.style.display = "none";
+document.body.appendChild(followImg);
+
+function toggleSurprise() {
+  followMode = !followMode;
+  document.body.classList.toggle("surprise");
+  document.body.classList.toggle("follow-mode");
+
+  followImg.style.display = followMode ? "block" : "none";
+
+  if (!followMode) {
+    ghosts.forEach(g => g.remove());
+    ghosts = [];
+    chaos = 0;
+    document.body.style.transform = "";
+  }
+}
+
+let mouseX = 0;
+let mouseY = 0;
+
+document.addEventListener("mousemove", (e) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
+
+function animateChaos() {
+
+  if (followMode) {
+
+    followImg.style.left = mouseX + "px";
+    followImg.style.top = mouseY + "px";
+
+    if (Math.random() < 0.2) {
+      const ghost = followImg.cloneNode(true);
+      ghost.classList.add("ghost");
+
+      ghost.style.left = mouseX + "px";
+      ghost.style.top = mouseY + "px";
+
+      document.body.appendChild(ghost);
+
+      setTimeout(() => ghost.remove(), 800);
+    }
+
+    chaos += 0.002;
+
+    document.body.style.transform =
+      `rotate(${Math.sin(chaos) * 0.5}deg)`;
+  }
+
+  requestAnimationFrame(animateChaos);
+}
+
+animateChaos();
+
+</script>
+
+</body>
+</html>

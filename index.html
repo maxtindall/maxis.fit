@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Max Tindall</title>
+<meta charset="UTF-8">
+
+<style>
+* { font-family: "Courier New", monospace; }
+html, body, a { cursor: crosshair; }
+
+a { color: black; text-decoration: underline; }
+a:hover { color: hotpink; text-decoration: none; }
+
+body {
+  margin: 0;
+  padding-left: 18px;
+  padding-top: 14px;
+}
+
+#container { width: 750px; }
+
+h1 {
+  font-size: 50px;
+  margin: 0;
+  padding-bottom: 14px;
+  text-decoration: underline;
+}
+
+#portrait {
+  float: left;
+  width: 575px;
+  position: relative;
+}
+
+.circle-gallery {
+  width: 575px;
+  height: 575px;
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.circle-gallery img,
+.circle-gallery video {
+  position: absolute;
+  width: 575px;
+  height: 575px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.circle-gallery img {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.circle-gallery img.active {
+  opacity: 1;
+}
+
+.circle-gallery video {
+  transform: scale(-1,1);
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+#menu {
+  font-size: 20px;
+  float: right;
+  width: 175px;
+}
+
+#dateOnly { margin-top: 18px; font-size: 16px; }
+#timeOnly { font-size: 14px; opacity: 0.8; }
+
+.clear { clear: both; }
+
+body.surprise {
+  background: black;
+  color: white;
+  filter: invert(1) contrast(1.2);
+}
+</style>
+</head>
+
+<body>
+
+<div id="container">
+
+<h1><a href="index.html">MAX TINDALL</a></h1>
+
+<div id="portrait">
+  <div class="circle-gallery">
+
+    <!-- 🔥 STANDARDIZED PATHS -->
+    <img src="images/gallery_01.png" class="active">
+    <img src="images/gallery_02.png">
+    <img src="images/gallery_03.png">
+
+  </div>
+</div>
+
+<div id="menu">
+  <a href="about.html">about</a><br/>
+  <a href="links.html">links</a><br/>
+  <a href="projects.html">projects</a><br/>
+  <a href="selected_work.html">selected work</a><br/>
+ <!-- <a href="#" onclick="toggleSurprise(); return false;">camera mode</a>-->
+
+  <div id="dateOnly"><span id="dateText"></span></div>
+  <div id="timeOnly"><span id="timeText"></span></div>
+</div>
+
+<div class="clear"></div>
+
+</div>
+
+<script>
+
+/* 🔥 SINGLE SOURCE OF TRUTH */
+const imageSources = [
+  "images/gallery_01.png",
+  "images/gallery_02.png",
+  "images/gallery_03.png"
+];
+
+const galleryEl = document.querySelector(".circle-gallery");
+const images = galleryEl.querySelectorAll("img");
+
+let index = 0;
+let galleryInterval = null;
+
+/* ROTATION */
+function rotateImages() {
+  images[index].classList.remove("active");
+  index = (index + 1) % imageSources.length;
+  images[index].classList.add("active");
+}
+
+function startGallery() {
+  if (!galleryInterval) {
+    galleryInterval = setInterval(rotateImages, 2000);
+  }
+}
+
+function stopGallery() {
+  clearInterval(galleryInterval);
+  galleryInterval = null;
+}
+
+startGallery();
+
+/* DATE */
+function updateDate() {
+  document.getElementById("dateText").textContent =
+    new Date().toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    });
+}
+
+function updateTime() {
+  document.getElementById("timeText").textContent =
+    new Date().toLocaleTimeString('en-GB', { hour12: false });
+}
+
+updateDate();
+updateTime();
+setInterval(updateTime, 1000);
+
+/* SELFIE MODE */
+let selfieMode = false;
+let videoEl = null;
+let cameraStream = null;
+let chaos = 0;
+let takeover = 0;
+
+async function activateCamera() {
+  if (videoEl) return;
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+    videoEl = document.createElement("video");
+    videoEl.srcObject = cameraStream;
+    videoEl.autoplay = true;
+    videoEl.playsInline = true;
+
+    galleryEl.appendChild(videoEl);
+
+  } catch (err) {
+    console.log("camera denied");
+  }
+}
+
+function stopCamera() {
+  if (videoEl) videoEl.remove();
+  if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+
+  videoEl = null;
+  cameraStream = null;
+}
+
+function toggleSurprise() {
+
+  selfieMode = !selfieMode;
+  document.body.classList.toggle("surprise");
+
+  if (selfieMode) {
+
+    activateCamera();
+    stopGallery();
+
+    images.forEach(img => img.classList.remove("active"));
+
+    takeover = 0;
+
+  } else {
+
+    stopCamera();
+    startGallery();
+
+    images.forEach(img => img.classList.remove("active"));
+    images[index].classList.add("active");
+
+    chaos = 0;
+    takeover = 0;
+    galleryEl.style.transform = "";
+  }
+}
+
+/* ANIMATION */
+function animate() {
+
+  if (selfieMode && videoEl) {
+
+    chaos += 0.02;
+
+    takeover += 0.003;
+    if (takeover > 1) takeover = 1;
+
+    videoEl.style.opacity = takeover;
+
+    images.forEach(img => {
+      img.style.opacity = 1 - takeover;
+    });
+
+    galleryEl.style.transform = `
+      rotate(${Math.sin(chaos) * 5}deg)
+      scale(${1 + Math.sin(chaos * 2) * 0.05})
+    `;
+  }
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+
+</script>
+
+</body>
+</html>
