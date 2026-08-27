@@ -202,6 +202,17 @@ function stopCamera() {
   cameraStream = null;
 }
 
+/* Cmd+S (Ctrl+S elsewhere) toggles surprise mode. preventDefault stops the
+   browser's Save Page dialog. Ignored while typing in a field. */
+document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) {
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    e.preventDefault();
+    toggleSurprise();
+  }
+});
+
 function toggleSurprise() {
 
   selfieMode = !selfieMode;

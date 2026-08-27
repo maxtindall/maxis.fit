@@ -193,6 +193,17 @@ followImg.style.height = "575px";
 followImg.style.borderRadius = "50%";
 followImg.style.display = "none";
 document.body.appendChild(followImg);
+/* Cmd+S (Ctrl+S elsewhere) toggles surprise mode. preventDefault stops the
+   browser's Save Page dialog. Ignored while typing in a field. */
+document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) {
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    e.preventDefault();
+    toggleSurprise();
+  }
+});
+
 function toggleSurprise() {
   if (!followImg.src) followImg.src = "circular_image.png"; // load on demand
   followMode = !followMode;
