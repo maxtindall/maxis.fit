@@ -96,8 +96,6 @@ body.surprise {
 
     <!-- 🔥 STANDARDIZED PATHS -->
     <img src="images/gallery_01.png" class="active">
-    <img src="images/gallery_02.png">
-    <img src="images/gallery_03.png">
 
   </div>
 </div>
@@ -121,9 +119,7 @@ body.surprise {
 
 /* 🔥 SINGLE SOURCE OF TRUTH */
 const imageSources = [
-  "images/gallery_01.png",
-  "images/gallery_02.png",
-  "images/gallery_03.png"
+  "images/gallery_01.png"
 ];
 
 const galleryEl = document.querySelector(".circle-gallery");
@@ -140,7 +136,7 @@ function rotateImages() {
 }
 
 function startGallery() {
-  if (!galleryInterval) {
+  if (!galleryInterval && imageSources.length > 1) {
     galleryInterval = setInterval(rotateImages, 2000);
   }
 }
