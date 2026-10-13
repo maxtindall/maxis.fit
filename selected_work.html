@@ -122,48 +122,29 @@ setInterval(updateTime, 1000);
 
 /* GALLERY WITH DESCRIPTIONS */
 
-const gallery = [
-    
-  {
-    src: "image_x_web.jpg",
-    full: "image_x.jpeg",
-    text: "001. Untitled, Watercolour & acryllic paint marker on paper, 2026."
-  },       
-  {      
-    src: "image3_web.jpg",
-    full: "image3.jpg",
-    text: "002. Untitled, Watercolour & ink pen on paper, 2023."
-  },
-  {
-    src: "image4_web.jpg",
-    full: "image4.jpg",
-    text: "003. Untitled, Watercolour on paper, 2023."
-  },
-  {
-    src: "image5_web.jpg",
-    full: "image5.jpg",
-    text: "004. Untitled, Watercolour on paper, 2023."
-  },
-  {
-    src: "image6_web.jpg",
-    full: "image6.jpg",
-    text: "005. Untitled, Watercolour on paper, 2023."
-  }
-];
+/* works come from works.json (managed by the Telegram bot);
+   the number is automatic: position in the list, zero-padded */
+let gallery = [];
+const label = i => String(i + 1).padStart(3, "0") + ". " + gallery[i].caption;
 
 let index = 0;
 const img = document.getElementById("mainImage");
 const description = document.getElementById("description");
 
 /* INITIAL LOAD */
-img.src = gallery[0].src;
-description.textContent = gallery[0].text;
+function init() {
+  if (!gallery.length) return;
+  img.src = gallery[0].src;
+  description.textContent = label(0);
 
-/* PRELOAD */
-gallery.forEach(item => {
-  const i = new Image();
-  i.src = item.src;
-});
+  /* PRELOAD */
+  gallery.forEach(item => {
+    const i = new Image();
+    i.src = item.src;
+  });
+
+  startRotation();
+}
 
 /* ROTATION */
 
@@ -175,7 +156,7 @@ function startRotation() {
       index = (index + 1) % gallery.length;
 
       img.src = gallery[index].src;
-      description.textContent = gallery[index].text;
+      description.textContent = label(index);
 
     }, 4000);
   }
@@ -186,7 +167,10 @@ function stopRotation() {
   interval = null;
 }
 
-startRotation();
+fetch("works.json", { cache: "no-cache" })
+  .then(r => r.json())
+  .then(d => { gallery = d.works; init(); })
+  .catch(() => {});
 
 /* ZOOM */
 
