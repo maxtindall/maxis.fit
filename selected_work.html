@@ -67,6 +67,23 @@ h1 {
   opacity: 0.8;
 }
 
+/* STATE MARKER + KEY HINTS */
+#status {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+#keys {
+  margin-top: 22px;
+  font-size: 12px;
+  line-height: 1.6;
+  opacity: 0.8;
+  display: grid;
+  grid-template-columns: 74px 1fr;
+}
+
+@media (hover: none) { #keys { display: none; } }  /* touch screens: no keyboard */
+
 .clear { clear: both; }
 
 </style>
@@ -93,6 +110,13 @@ h1 {
 
     <!-- NEW DESCRIPTION -->
     <div id="description"></div>
+    <div id="status"></div>
+
+    <div id="keys">
+      <span>[space]</span><span>pause</span>
+      <span>[&larr;] [&rarr;]</span><span>prev / next</span>
+      <span>dbl-click</span><span>zoom</span>
+    </div>
   </div>
 
   <div class="clear"></div>
@@ -130,12 +154,19 @@ const label = i => String(i + 1).padStart(3, "0") + ". " + gallery[i].caption;
 let index = 0;
 const img = document.getElementById("mainImage");
 const description = document.getElementById("description");
+const statusEl = document.getElementById("status");
+
+/* state marker under the caption */
+function renderStatus() {
+  statusEl.textContent = zoomed ? "zoomed" : paused ? "paused" : "unpaused";
+}
 
 /* INITIAL LOAD */
 function init() {
   if (!gallery.length) return;
   img.src = gallery[0].src;
   description.textContent = label(0);
+  renderStatus();
 
   /* PRELOAD */
   gallery.forEach(item => {
@@ -149,16 +180,23 @@ function init() {
 /* ROTATION */
 
 let interval = null;
+let paused = false;   /* space bar toggles; stays paused until pressed again */
+let zoomed = false;
+
+/* show work i (wraps around); honours zoom state */
+function show(i) {
+  index = (i + gallery.length) % gallery.length;
+  img.src = zoomed ? gallery[index].full : gallery[index].src;
+  description.textContent = label(index);
+  if (zoomed) {
+    img.style.left = "0px";
+    img.style.top = "0px";
+  }
+}
 
 function startRotation() {
-  if (!interval) {
-    interval = setInterval(() => {
-      index = (index + 1) % gallery.length;
-
-      img.src = gallery[index].src;
-      description.textContent = label(index);
-
-    }, 4000);
+  if (!interval && !paused && !zoomed) {
+    interval = setInterval(() => show(index + 1), 4000);
   }
 }
 
@@ -172,13 +210,33 @@ fetch("works.json", { cache: "no-cache" })
   .then(d => { gallery = d.works; init(); })
   .catch(() => {});
 
-/* ZOOM */
+/* KEYBOARD: space = pause / resume, left / right = previous / next */
 
-let zoomed = false;
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey || !gallery.length) return;
+
+  if (e.key === " ") {
+    e.preventDefault();                 /* no page scroll */
+    paused = !paused;
+    if (paused) stopRotation(); else startRotation();
+    renderStatus();
+  } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    show(index + (e.key === "ArrowRight" ? 1 : -1));
+    if (interval) {                     /* restart the clock so the new image gets its full time */
+      stopRotation();
+      startRotation();
+    }
+  }
+});
+
+/* ZOOM */
 
 img.addEventListener("dblclick", () => {
 
-  if (!zoomed) {
+  zoomed = !zoomed;
+
+  if (zoomed) {
     img.src = gallery[index].full;      /* full resolution on zoom */
     img.style.maxWidth = "none";
     img.style.maxHeight = "none";
@@ -190,10 +248,9 @@ img.addEventListener("dblclick", () => {
     img.style.left = "0px";
     img.style.top = "0px";
     img.style.position = "static";
-    startRotation();
+    startRotation();                    /* no-op while paused */
   }
-
-  zoomed = !zoomed;
+  renderStatus();
 });
 
 /* DRAG */
