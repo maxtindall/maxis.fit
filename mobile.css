@@ -1,0 +1,124 @@
+/* Phone / small-screen layout, shared by every page.
+   Desktop layout (750px container, 575px image, 175px menu column) is untouched
+   above 760px. Below it: title, nav row, content, then the date and time.
+   #menu is flattened with display: contents so its children can be reordered
+   without changing any page markup. */
+
+html { -webkit-text-size-adjust: 100%; }
+
+/* ---------- touch controls (selected work) ---------- */
+#controls { display: none; }
+
+@media (pointer: coarse) {
+  #keys { display: none; }
+  #controls {
+    display: block;
+    margin-top: 20px;
+    border: 1px dashed currentColor;
+    font-size: 12px;
+    opacity: 0.8;
+  }
+  #controls .row { display: flex; }
+  #controls button {
+    flex: 1;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #controls button + button { border-left: 1px dashed currentColor; }
+  #controls button:active { color: hotpink; }
+  #controls .hint { padding: 6px 8px 8px; border-top: 1px dashed currentColor; line-height: 1.5; }
+}
+
+/* ---------- small screens ---------- */
+@media (max-width: 760px) {
+
+  body {
+    padding: 14px 16px 32px;
+    overflow-x: hidden;
+  }
+
+  #container {
+    width: auto;
+    max-width: 750px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 14px;
+  }
+
+  /* title scales so "MAX TINDALL" always fits on one line */
+  h1 {
+    flex: 0 0 100%;
+    order: 0;
+    font-size: min(50px, calc((100vw - 32px) / 6.8));
+    padding-bottom: 4px;
+  }
+
+  /* nav row, right under the title */
+  #menu { display: contents; }
+  #menu > a {
+    order: 1;
+    font-size: 16px;
+    padding: 10px 0;
+  }
+  #menu > br, .clear { display: none; }
+
+  /* content */
+  #portrait {
+    order: 2;
+    float: none;
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 575px;
+    height: auto;
+    display: block;
+    margin-top: 6px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+  #portrait:has(#mainImage) { aspect-ratio: 1; }   /* selected work: square frame */
+  #portrait hr { width: 100% !important; }
+
+  /* homepage circle scales with the screen */
+  .circle-gallery {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+  .circle-gallery img,
+  .circle-gallery video {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* things that used to live in the menu column, now under the content */
+  #description, #latest { order: 3; flex: 0 0 100%; margin-top: 14px; font-size: 15px; line-height: 1.4; }
+  #status           { order: 4; flex: 0 0 100%; margin-top: 8px; font-size: 15px; }
+  #keys             { order: 5; flex: 0 0 100%; }
+  #controls         { order: 5; flex: 0 0 auto; width: min(100%, 220px); box-sizing: border-box; }
+  #dateOnly         { order: 6; margin-top: 22px; font-size: 14px; }
+  #timeOnly         { order: 7; margin-top: 22px; font-size: 14px; }
+
+  /* link lists: roomy enough to tap */
+  .tap-list { line-height: 2.2; }
+
+  /* archive page */
+  #list { width: 100%; }
+  #container > p { flex: 0 0 100%; }
+}
+
+/* gallery image: vertical scrolling stays with the page, horizontal swipes are ours;
+   (zoomed state sets touch-action: none inline in the page) */
+#mainImage {
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}

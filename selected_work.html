@@ -101,6 +101,8 @@ h1 {
 .clear { clear: both; }
 
 </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="mobile.css">
 </head>
 
 <body>
@@ -132,6 +134,15 @@ h1 {
       <span>dbl-click</span><span>zoom</span>
       <span>drag</span><span>pan</span>
       <span>[+] [-]</span><span>zoom level</span>
+    </div>
+
+    <div id="controls">
+      <div class="row">
+        <button id="prevBtn" type="button" aria-label="previous work">&larr;</button>
+        <button id="pauseBtn" type="button">pause</button>
+        <button id="nextBtn" type="button" aria-label="next work">&rarr;</button>
+      </div>
+      <div class="hint">swipe to browse<br>double-tap to zoom<br>pinch + drag to explore</div>
     </div>
   </div>
 
@@ -171,10 +182,12 @@ let index = 0;
 const img = document.getElementById("mainImage");
 const description = document.getElementById("description");
 const statusEl = document.getElementById("status");
+const pauseBtn = document.getElementById("pauseBtn");
 
 /* state marker under the caption */
 function renderStatus() {
   statusEl.textContent = zoomed ? "zoomed" : paused ? "paused" : "unpaused";
+  pauseBtn.textContent = paused ? "resume" : "pause";
 }
 
 /* INITIAL LOAD */
@@ -235,21 +248,30 @@ fetch("works.json", { cache: "no-cache" })
 
 /* KEYBOARD: space = pause / resume, left / right = previous / next */
 
+function togglePause() {
+  paused = !paused;
+  if (paused) stopRotation(); else startRotation();
+  renderStatus();
+}
+
+/* previous / next; restart the clock so the new image gets its full time */
+function step(dir) {
+  show(index + dir);
+  if (interval) {
+    stopRotation();
+    startRotation();
+  }
+}
+
 document.addEventListener("keydown", (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey || !gallery.length) return;
 
   if (e.key === " ") {
     e.preventDefault();                 /* no page scroll */
-    paused = !paused;
-    if (paused) stopRotation(); else startRotation();
-    renderStatus();
+    togglePause();
   } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
     e.preventDefault();
-    show(index + (e.key === "ArrowRight" ? 1 : -1));
-    if (interval) {                     /* restart the clock so the new image gets its full time */
-      stopRotation();
-      startRotation();
-    }
+    step(e.key === "ArrowRight" ? 1 : -1);
   } else if (zoomed && (e.key === "Escape")) {
     exitZoom();
   } else if (zoomed && ["+", "=", "-", "_"].includes(e.key)) {
@@ -260,6 +282,11 @@ document.addEventListener("keydown", (e) => {
             (sw / 2 - view.x) / view.w, (sh / 2 - view.y) / view.h, sw / 2, sh / 2);
   }
 });
+
+/* touch buttons */
+document.getElementById("prevBtn").addEventListener("click", () => step(-1));
+document.getElementById("nextBtn").addEventListener("click", () => step(1));
+pauseBtn.addEventListener("click", togglePause);
 
 /* ZOOM: double-click zooms in on the spot you click, drag pans, + / - change the
    level, double-click (or Esc) zooms out. The image is panned inside its frame
@@ -318,37 +345,111 @@ function exitZoom() {
   renderStatus();
 }
 
+function toggleZoom(cx, cy) {
+  if (zoomed) exitZoom(); else enterZoom(cx, cy);
+}
+
+/* POINTERS. Mouse: double-click zooms, drag pans.
+   Touch: swipe browses, double-tap zooms, one finger pans, two fingers pinch.
+   Pointer events keep tracking even if the pointer leaves the image. */
+
+const pointers = new Map();   /* active pointers: id -> {x, y} */
+let lastType = "mouse";
+let drag = null;              /* one-pointer pan while zoomed */
+let pinch = null;             /* two-finger zoom: start distance, level, image point */
+let tap = null;               /* where / when the current touch began */
+let lastTap = null;           /* previous tap, for double-tap */
+
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
 img.addEventListener("dblclick", (e) => {
-  if (zoomed) exitZoom(); else enterZoom(e.clientX, e.clientY);
+  if (lastType === "mouse") toggleZoom(e.clientX, e.clientY);
 });
 
-/* DRAG (pointer events: works with mouse, trackpad and touch, and keeps
-   tracking even if the pointer leaves the image) */
-
-let drag = null;
-
 img.addEventListener("pointerdown", (e) => {
-  if (!zoomed || e.button !== 0) return;
+  lastType = e.pointerType;
+  if (e.pointerType === "mouse" && (e.button !== 0 || !zoomed)) return;
   e.preventDefault();
   img.setPointerCapture(e.pointerId);
-  drag = { x: e.clientX - view.x, y: e.clientY - view.y };
-  img.classList.add("dragging");
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (pointers.size === 2 && zoomed) {
+    const [a, b] = [...pointers.values()];
+    const s = stage.getBoundingClientRect();
+    const mx = (a.x + b.x) / 2 - s.left, my = (a.y + b.y) / 2 - s.top;
+    pinch = { d: dist(a, b), k: zoomK, fx: (mx - view.x) / view.w, fy: (my - view.y) / view.h };
+    drag = null;
+    tap = null;
+  } else if (pointers.size === 1) {
+    tap = { x: e.clientX, y: e.clientY, t: performance.now(), moved: false };
+    if (zoomed) {
+      drag = { x: e.clientX - view.x, y: e.clientY - view.y };
+      img.classList.add("dragging");
+    }
+  }
 });
 
 img.addEventListener("pointermove", (e) => {
-  if (!drag) return;
-  view.x = e.clientX - drag.x;
-  view.y = e.clientY - drag.y;
-  applyView();
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 10) tap.moved = true;
+
+  if (pinch && pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    const s = stage.getBoundingClientRect();
+    setZoom(pinch.k * dist(a, b) / pinch.d, pinch.fx, pinch.fy,
+            (a.x + b.x) / 2 - s.left, (a.y + b.y) / 2 - s.top);
+  } else if (drag) {
+    view.x = e.clientX - drag.x;
+    view.y = e.clientY - drag.y;
+    applyView();
+  }
 });
 
-function endDrag() {
+function releasePointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+
+  /* lifting one finger of a pinch: carry on panning with the other */
+  if (pinch && pointers.size < 2) {
+    pinch = null;
+    const p = [...pointers.values()][0];
+    if (p && zoomed) drag = { x: p.x - view.x, y: p.y - view.y };
+  }
+  if (pointers.size) return;
+
   drag = null;
   img.classList.remove("dragging");
+  const t = tap;
+  tap = null;
+  if (!t || e.type !== "pointerup" || e.pointerType === "mouse") return;
+
+  const dx = e.clientX - t.x, dy = e.clientY - t.y;
+  if (!zoomed && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    lastTap = null;
+    step(dx < 0 ? 1 : -1);              /* swipe left = next */
+  } else if (!t.moved && performance.now() - t.t < 300) {
+    const now = performance.now();
+    if (lastTap && now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) {
+      lastTap = null;
+      toggleZoom(e.clientX, e.clientY);  /* double-tap */
+    } else {
+      lastTap = { t: now, x: e.clientX, y: e.clientY };
+    }
+  }
 }
-img.addEventListener("pointerup", endDrag);
-img.addEventListener("pointercancel", endDrag);
+img.addEventListener("pointerup", releasePointer);
+img.addEventListener("pointercancel", releasePointer);
 img.addEventListener("dragstart", (e) => e.preventDefault());
+
+/* rotating the phone / resizing the window changes the frame: leave zoom */
+let frameW = stage.clientWidth;
+window.addEventListener("resize", () => {
+  if (stage.clientWidth !== frameW) {
+    frameW = stage.clientWidth;
+    if (zoomed) exitZoom();
+  }
+});
 
 </script>
 
