@@ -11,9 +11,8 @@ html { -webkit-text-size-adjust: 100%; }
 
 @media (pointer: coarse) {
   #keys { display: none; }
-  #controls {
-    display: block;
-    margin-top: 20px;
+  #controls { display: block; margin-top: 20px; }
+  #controls .box {
     border: 1px dashed currentColor;
     font-size: 12px;
     opacity: 0.8;
@@ -41,8 +40,7 @@ html { -webkit-text-size-adjust: 100%; }
 @media (max-width: 760px) {
 
   body {
-    padding: 14px 16px 32px;
-    overflow-x: hidden;
+    padding: 14px 16px 48px;
   }
 
   #container {
@@ -103,10 +101,10 @@ html { -webkit-text-size-adjust: 100%; }
   #description, #latest { order: 3; flex: 0 0 100%; margin-top: 14px; font-size: 15px; line-height: 1.4; }
   #status           { order: 4; flex: 0 0 100%; margin-top: 8px; font-size: 15px; }
   #keys             { order: 5; flex: 0 0 100%; }
-  #controls         { order: 5; flex: 0 0 auto; width: min(100%, 220px); box-sizing: border-box;
-                      margin-right: 100%; }   /* takes its own row: the date sits below, never beside */
-  #dateOnly         { order: 6; margin-top: 22px; font-size: 14px; }
-  #timeOnly         { order: 7; margin-top: 22px; font-size: 14px; }
+  #controls         { order: 5; flex: 0 0 100%; }          /* a full row of its own: the date sits below, never beside */
+  #controls .box    { width: min(100%, 220px); box-sizing: border-box; }
+  #dateOnly         { order: 6; margin-top: 22px; font-size: 14px; white-space: nowrap; }
+  #timeOnly         { order: 7; margin-top: 22px; font-size: 14px; white-space: nowrap; }
 
   /* link lists: roomy enough to tap */
   .tap-list { line-height: 2.2; }
