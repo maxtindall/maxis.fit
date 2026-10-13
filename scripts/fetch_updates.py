@@ -25,6 +25,7 @@ FILES = f"https://api.telegram.org/file/bot{TOKEN}/"
 UPDATES, WORKS = "updates.json", "works.json"
 WORKS_DIR = "works"
 MAX_UPDATE, MAX_CAPTION, WEB_EDGE = 280, 200, 1600
+SHARP_EDGE = 2000  # below this long edge, deep zoom looks soft
 
 HELP = ("Text: homepage update.\n"
         "Photo or image file + caption: new work (send as file for full res).\n"
@@ -99,7 +100,15 @@ def add_work(works, m, update_id):
         full = f"{stem}_web.jpg"
     works.append({"src": f"{stem}_web.jpg", "full": full,
                   "caption": tidy_caption(m.get("caption") or "")})
-    return f"Added as {len(works):03d}: {works[-1]['caption']}"
+    msg = f"Added as {len(works):03d}: {works[-1]['caption']}"
+    w, h = im.size
+    if max(w, h) < SHARP_EDGE:
+        how = ("it was sent as a photo, which Telegram compresses"
+               if not is_file else "the file itself is small")
+        msg += (f"\n\nHeads up: {how}, so this is only {w}x{h} and deep zoom "
+                f"will look soft. For sharp zoom, /remove {len(works)} and "
+                "send the original again as a file (attach > File).")
+    return msg
 
 
 def parse_n(works, token):
