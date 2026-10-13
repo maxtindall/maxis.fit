@@ -1,0 +1,34 @@
+name: telegram-updates
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: telegram-updates
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: fetch
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_USER_ID: ${{ secrets.TELEGRAM_USER_ID }}
+        run: |
+          out=$(python3 scripts/fetch_updates.py)
+          echo "out=$out" >> "$GITHUB_OUTPUT"
+      - name: Commit and redeploy
+        if: steps.fetch.outputs.out == 'changed'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "telegram-bot"
+          git config user.email "telegram-bot@users.noreply.github.com"
+          git add updates.json
+          git commit -m "update from telegram"
+          git push
+          # pushes made with GITHUB_TOKEN don't trigger the deploy workflow
+          gh workflow run site.yml

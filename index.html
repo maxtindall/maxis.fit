@@ -74,6 +74,7 @@ h1 {
 
 #dateOnly { margin-top: 18px; font-size: 16px; }
 #timeOnly { font-size: 14px; opacity: 0.8; }
+#latest { margin-top: 18px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
 
 .clear { clear: both; }
 
@@ -109,6 +110,7 @@ body.surprise {
 
   <div id="dateOnly"><span id="dateText"></span></div>
   <div id="timeOnly"><span id="timeText"></span></div>
+  <div id="latest"></div>
 </div>
 
 <div class="clear"></div>
@@ -164,6 +166,20 @@ function updateTime() {
 updateDate();
 updateTime();
 setInterval(updateTime, 1000);
+
+/* LATEST UPDATE (from Telegram, see updates.json) */
+/* proper capitalisation for updates only: first letter, after . ! ?, and standalone "i" */
+function capitalise(t) {
+  return t.replace(/(^|[.!?]\s+)([a-z])/g, (m, a, b) => a + b.toUpperCase())
+          .replace(/\bi\b(?=['\s.,!?;:]|$)/g, "I");
+}
+fetch("updates.json", { cache: "no-cache" })
+  .then(r => r.json())
+  .then(d => {
+    const last = d.updates[d.updates.length - 1];
+    if (last) document.getElementById("latest").textContent = capitalise(last.text);
+  })
+  .catch(() => {});
 
 /* SELFIE MODE */
 let selfieMode = false;

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Max Tindall - archive</title>
+<meta charset="UTF-8">
+<style>
+* { font-family: "Courier New", monospace; }
+html, body, a { cursor: crosshair; }
+a { color: black; text-decoration: underline; }
+a:hover { color: hotpink; text-decoration: none; }
+body { margin: 0; padding-left: 18px; padding-top: 14px; }
+#container { width: 750px; max-width: calc(100vw - 36px); }
+#list { width: 575px; max-width: 100%; }
+h1 { font-size: 50px; margin: 0; padding-bottom: 14px; text-decoration: underline; }
+.entry { margin: 0 0 22px; }
+.when { font-size: 14px; opacity: 0.8; margin-bottom: 2px; }
+.text { font-size: 16px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; }
+</style>
+</head>
+<body>
+<div id="container">
+<h1><a href="index.html">MAX TINDALL</a></h1>
+<p style="font-size:16px;margin:0 0 22px">&larr; <a href="index.html">back</a></p>
+<div id="list"></div>
+</div>
+<script>
+/* proper capitalisation for updates only: first letter, after . ! ?, and standalone "i" */
+function capitalise(t) {
+  return t.replace(/(^|[.!?]\s+)([a-z])/g, (m, a, b) => a + b.toUpperCase())
+          .replace(/\bi\b(?=['\s.,!?;:]|$)/g, "I");
+}
+fetch("updates.json", { cache: "no-cache" })
+  .then(r => r.json())
+  .then(d => {
+    const list = document.getElementById("list");
+    if (!d.updates.length) { list.textContent = "nothing yet."; return; }
+    d.updates.slice().reverse().forEach(u => {
+      const e = document.createElement("div"); e.className = "entry";
+      const w = document.createElement("div"); w.className = "when";
+      w.textContent = new Date(u.date).toLocaleString("en-GB",
+        { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+      const t = document.createElement("div"); t.className = "text"; t.textContent = capitalise(u.text);
+      e.append(w, t); list.appendChild(e);
+    });
+  })
+  .catch(() => { document.getElementById("list").textContent = "could not load."; });
+</script>
+</body>
+</html>
