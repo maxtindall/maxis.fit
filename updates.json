@@ -1,1 +1,9 @@
-{"offset": 0, "updates": []}
+{
+ "offset": 56030875,
+ "updates": [
+  {
+   "date": "2026-10-13T18:43:48+00:00",
+   "text": "hello world #2! this is the second test of the max emergency update system"
+  }
+ ]
+}
