@@ -103,7 +103,8 @@ html { -webkit-text-size-adjust: 100%; }
   #description, #latest { order: 3; flex: 0 0 100%; margin-top: 14px; font-size: 15px; line-height: 1.4; }
   #status           { order: 4; flex: 0 0 100%; margin-top: 8px; font-size: 15px; }
   #keys             { order: 5; flex: 0 0 100%; }
-  #controls         { order: 5; flex: 0 0 auto; width: min(100%, 220px); box-sizing: border-box; }
+  #controls         { order: 5; flex: 0 0 auto; width: min(100%, 220px); box-sizing: border-box;
+                      margin-right: 100%; }   /* takes its own row: the date sits below, never beside */
   #dateOnly         { order: 6; margin-top: 22px; font-size: 14px; }
   #timeOnly         { order: 7; margin-top: 22px; font-size: 14px; }
 
