@@ -1,5 +1,5 @@
 {
- "offset": 56030879,
+ "offset": 56030880,
  "updates": [
   {
    "date": "2026-10-13T18:43:48+00:00",
@@ -16,6 +16,10 @@
   {
    "date": "2026-10-13T19:57:53+00:00",
    "text": "Please see #006 under selected work; new painting posting on 14 October."
+  },
+  {
+   "date": "2026-10-13T20:46:35+00:00",
+   "text": "New mobile site is live and should be working, let me know if it sucks!"
   }
  ]
 }
