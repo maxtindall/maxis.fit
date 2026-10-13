@@ -49,6 +49,17 @@ h1 {
   user-select: none;
 }
 
+/* ZOOMED: the image is panned inside its frame and clipped to it */
+#portrait.zoomed { position: relative; overflow: hidden; }
+#portrait.zoomed #mainImage {
+  position: absolute;
+  max-width: none;
+  max-height: none;
+  touch-action: none;
+  -webkit-user-drag: none;
+}
+#mainImage.dragging { cursor: grabbing; }
+
 /* MENU */
 #menu {
   font-size: 20px;
@@ -71,10 +82,11 @@ h1 {
 #status {
   margin-top: 10px;
   font-size: 14px;
+  font-weight: bold;
 }
 
 #keys {
-  margin-top: 22px;
+  margin-top: 10px;
   font-size: 12px;
   line-height: 1.6;
   opacity: 0.8;
@@ -116,6 +128,8 @@ h1 {
       <span>[space]</span><span>pause</span>
       <span>[&larr;] [&rarr;]</span><span>prev / next</span>
       <span>dbl-click</span><span>zoom</span>
+      <span>drag</span><span>pan</span>
+      <span>[+] [-]</span><span>zoom level</span>
     </div>
   </div>
 
@@ -183,14 +197,21 @@ let interval = null;
 let paused = false;   /* space bar toggles; stays paused until pressed again */
 let zoomed = false;
 
-/* show work i (wraps around); honours zoom state */
+/* show work i (wraps around); a zoom carries over to the new work */
 function show(i) {
   index = (i + gallery.length) % gallery.length;
-  img.src = zoomed ? gallery[index].full : gallery[index].src;
   description.textContent = label(index);
   if (zoomed) {
-    img.style.left = "0px";
-    img.style.top = "0px";
+    img.style.visibility = "hidden";    /* until the full-res copy has loaded */
+    img.onload = () => {
+      img.onload = null;
+      img.style.visibility = "";
+      fit = fitSize(img.naturalWidth, img.naturalHeight);
+      setZoom(zoomK, 0.5, 0.5, stage.clientWidth / 2, stage.clientHeight / 2);
+    };
+    img.src = gallery[index].full;
+  } else {
+    img.src = gallery[index].src;
   }
 }
 
@@ -227,57 +248,105 @@ document.addEventListener("keydown", (e) => {
       stopRotation();
       startRotation();
     }
+  } else if (zoomed && (e.key === "Escape")) {
+    exitZoom();
+  } else if (zoomed && ["+", "=", "-", "_"].includes(e.key)) {
+    e.preventDefault();                 /* zoom level, about the centre of the frame */
+    const grow = e.key === "+" || e.key === "=";
+    const sw = stage.clientWidth, sh = stage.clientHeight;
+    setZoom(zoomK * (grow ? 1.4 : 1 / 1.4),
+            (sw / 2 - view.x) / view.w, (sh / 2 - view.y) / view.h, sw / 2, sh / 2);
   }
 });
 
-/* ZOOM */
+/* ZOOM: double-click zooms in on the spot you click, drag pans, + / - change the
+   level, double-click (or Esc) zooms out. The image is panned inside its frame
+   and can't be dragged out of it. */
 
-img.addEventListener("dblclick", () => {
+const stage = document.getElementById("portrait");
+const ZOOM_DEFAULT = 6, ZOOM_MIN = 2, ZOOM_MAX = 16;
+let zoomK = ZOOM_DEFAULT;   /* zoom factor relative to the fitted size */
+let fit = null;             /* fitted (unzoomed) size of the current image */
+let view = null;            /* size and offset of the image inside the frame while zoomed */
 
-  zoomed = !zoomed;
+function fitSize(nw, nh) {
+  const f = Math.min(1, stage.clientWidth / nw, stage.clientHeight / nh);
+  return { w: nw * f, h: nh * f };
+}
 
-  if (zoomed) {
-    img.src = gallery[index].full;      /* full resolution on zoom */
-    img.style.maxWidth = "none";
-    img.style.maxHeight = "none";
-    stopRotation();
-  } else {
-    img.src = gallery[index].src;       /* back to the light display copy */
-    img.style.maxWidth = "100%";
-    img.style.maxHeight = "100%";
-    img.style.left = "0px";
-    img.style.top = "0px";
-    img.style.position = "static";
-    startRotation();                    /* no-op while paused */
-  }
+function applyView() {
+  const sw = stage.clientWidth, sh = stage.clientHeight;
+  /* keep the image covering the frame (centred if it is smaller than it) */
+  view.x = view.w <= sw ? (sw - view.w) / 2 : Math.min(0, Math.max(sw - view.w, view.x));
+  view.y = view.h <= sh ? (sh - view.h) / 2 : Math.min(0, Math.max(sh - view.h, view.y));
+  img.style.width = view.w + "px";
+  img.style.height = view.h + "px";
+  img.style.left = view.x + "px";
+  img.style.top = view.y + "px";
+}
+
+/* zoom to factor k, keeping fraction (fx, fy) of the image under frame point (px, py) */
+function setZoom(k, fx, fy, px, py) {
+  zoomK = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, k));
+  const w = fit.w * zoomK, h = fit.h * zoomK;
+  view = { w, h, x: px - fx * w, y: py - fy * h };
+  applyView();
+}
+
+function enterZoom(cx, cy) {
+  const r = img.getBoundingClientRect(), s = stage.getBoundingClientRect();
+  fit = fitSize(img.naturalWidth, img.naturalHeight);
+  zoomed = true;
+  stopRotation();
+  stage.classList.add("zoomed");
+  img.src = gallery[index].full;        /* full resolution */
+  setZoom(ZOOM_DEFAULT, (cx - r.left) / r.width, (cy - r.top) / r.height,
+          cx - s.left, cy - s.top);
   renderStatus();
+}
+
+function exitZoom() {
+  zoomed = false;
+  view = null;
+  img.onload = null;
+  stage.classList.remove("zoomed");
+  img.style.cssText = "";
+  img.src = gallery[index].src;         /* back to the light display copy */
+  startRotation();                      /* no-op while paused */
+  renderStatus();
+}
+
+img.addEventListener("dblclick", (e) => {
+  if (zoomed) exitZoom(); else enterZoom(e.clientX, e.clientY);
 });
 
-/* DRAG */
+/* DRAG (pointer events: works with mouse, trackpad and touch, and keeps
+   tracking even if the pointer leaves the image) */
 
-let dragging = false;
-let offsetX = 0;
-let offsetY = 0;
+let drag = null;
 
-img.addEventListener("mousedown", (e) => {
-  if (zoomed) {
-    dragging = true;
-    img.style.position = "relative";
-    offsetX = e.clientX - img.offsetLeft;
-    offsetY = e.clientY - img.offsetTop;
-  }
+img.addEventListener("pointerdown", (e) => {
+  if (!zoomed || e.button !== 0) return;
+  e.preventDefault();
+  img.setPointerCapture(e.pointerId);
+  drag = { x: e.clientX - view.x, y: e.clientY - view.y };
+  img.classList.add("dragging");
 });
 
-document.addEventListener("mouseup", () => {
-  dragging = false;
+img.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  view.x = e.clientX - drag.x;
+  view.y = e.clientY - drag.y;
+  applyView();
 });
 
-document.addEventListener("mousemove", (e) => {
-  if (dragging) {
-    img.style.left = (e.clientX - offsetX) + "px";
-    img.style.top = (e.clientY - offsetY) + "px";
-  }
-});
+function endDrag() {
+  drag = null;
+  img.classList.remove("dragging");
+}
+img.addEventListener("pointerup", endDrag);
+img.addEventListener("pointercancel", endDrag);
+img.addEventListener("dragstart", (e) => e.preventDefault());
 
 </script>
 
