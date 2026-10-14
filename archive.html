@@ -15,6 +15,10 @@ h1 { font-size: 50px; margin: 0; padding-bottom: 14px; text-decoration: underlin
 .entry { margin: 0 0 22px; }
 .when { font-size: 14px; opacity: 0.8; margin-bottom: 2px; }
 .text { font-size: 16px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; }
+#pager { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: 6px 0 40px; font-size: 14px; }
+#pager .cur { font-weight: bold; }
+#pager .off { opacity: 0.35; }
+@media (pointer: coarse) { #pager a, #pager span { padding: 10px 0; } }   /* roomier tap targets */
 </style>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="mobile.css?v=2">
@@ -24,6 +28,7 @@ h1 { font-size: 50px; margin: 0; padding-bottom: 14px; text-decoration: underlin
 <h1><a href="index.html">MAX TINDALL</a></h1>
 <p style="font-size:16px;margin:0 0 22px">&larr; <a href="index.html">back</a></p>
 <div id="list"></div>
+<div id="pager"></div>
 </div>
 <script>
 /* proper capitalisation for updates only: first letter, after . ! ?, and standalone "i" */
@@ -31,12 +36,20 @@ function capitalise(t) {
   return t.replace(/(^|[.!?]\s+)([a-z])/g, (m, a, b) => a + b.toUpperCase())
           .replace(/\bi\b(?=['\s.,!?;:]|$)/g, "I");
 }
+const PER_PAGE = 10;   /* updates per archive page, newest first */
+
 fetch("updates.json", { cache: "no-cache" })
   .then(r => r.json())
   .then(d => {
     const list = document.getElementById("list");
     if (!d.updates.length) { list.textContent = "nothing yet."; return; }
-    d.updates.slice().reverse().forEach(u => {
+
+    const all = d.updates.slice().reverse();
+    const pages = Math.ceil(all.length / PER_PAGE);
+    const asked = parseInt(new URLSearchParams(location.search).get("p"), 10);
+    const page = Math.min(pages, Math.max(1, asked || 1));   /* bad or missing ?p= -> a real page */
+
+    all.slice((page - 1) * PER_PAGE, page * PER_PAGE).forEach(u => {
       const e = document.createElement("div"); e.className = "entry";
       const w = document.createElement("div"); w.className = "when";
       w.textContent = new Date(u.date).toLocaleString("en-GB",
@@ -44,8 +57,36 @@ fetch("updates.json", { cache: "no-cache" })
       const t = document.createElement("div"); t.className = "text"; t.textContent = capitalise(u.text);
       e.append(w, t); list.appendChild(e);
     });
+
+    if (pages > 1) renderPager(page, pages);
   })
   .catch(() => { document.getElementById("list").textContent = "could not load."; });
+
+/* pager: "<- newer  1 2 3  older ->"; with many pages the numbers collapse to "page 2 of 9" */
+function renderPager(page, pages) {
+  const pager = document.getElementById("pager");
+  const href = n => n === 1 ? "archive.html" : "archive.html?p=" + n;
+  const link = (n, text) => {
+    const el = document.createElement(n ? "a" : "span");
+    el.textContent = text;
+    if (n) el.href = href(n); else el.className = "off";
+    return el;
+  };
+  pager.append(link(page > 1 ? page - 1 : 0, "\u2190 newer"));
+  if (pages <= 7) {
+    for (let n = 1; n <= pages; n++) {
+      if (n === page) {
+        const cur = document.createElement("span"); cur.className = "cur"; cur.textContent = n;
+        pager.append(cur);
+      } else pager.append(link(n, n));
+    }
+  } else {
+    const mid = document.createElement("span"); mid.className = "cur";
+    mid.textContent = "page " + page + " of " + pages;
+    pager.append(mid);
+  }
+  pager.append(link(page < pages ? page + 1 : 0, "older \u2192"));
+}
 </script>
 </body>
 </html>
