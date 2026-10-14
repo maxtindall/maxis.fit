@@ -35,3 +35,10 @@ jobs:
           git push
           # pushes made with GITHUB_TOKEN don't trigger the deploy workflow
           gh workflow run site.yml
+      # every poll: if the live site is behind the repo and no deploy is making progress
+      # (Pages deploys occasionally hang), cancel the stuck one and start a fresh deploy
+      - name: Heal a stuck or stale deploy
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/heal_deploy.sh
