@@ -1,7 +1,9 @@
 name: telegram-updates
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # slow backup only: GitHub throttles schedules on quiet repos. The real
+    # trigger is the Cloudflare cron in ops/cloudflare-trigger (every 2 min).
+    - cron: "17 * * * *"
   workflow_dispatch:
 permissions:
   contents: write
